@@ -9,6 +9,6 @@ setup(  name        = "pyWRF",
         author_email='hejun.xie@zju.edu.cn',
         license='GPL-3.0',
         packages=['pyWRF'],
-        install_requires=['numpy','netCDF4'],
+        install_requires=['numpy','netCDF4', 'pyproj'],
         zip_safe=False
         )
