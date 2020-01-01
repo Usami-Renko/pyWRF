@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2019-12-31 19:05:07
+@LastEditTime : 2020-01-01 21:02:20
 '''
 
 # global import
@@ -20,7 +20,11 @@ from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
 import pyWRF.data as d
 
 # netcdf attributes
-_nc_localatts = ['variables', 'dimensions'] 
+_nc_builtins = ['__class__', '__delattr__', '__doc__', '__getattribute__', '__hash__', \
+            '__init__', '__module__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', \
+            '__setattr__', '__str__', '__weakref__', '__getitem__', '__setitem__', '__len__' ]
+
+_nc_localatts = ['variables', 'dimensions', 'groups']
 
 def open_file(fname): # Just create a file_instance class
     return FileClass(fname)
@@ -73,7 +77,7 @@ class FileClass(object):
         print('')
     
     def __getattribute__(self, attrib):
-        if attrib in nc_localatts:
+        if attrib in _nc_localatts or attrib in _nc_builtins:
             return self._handle.__getattribute__(attrib)
         else:
             return object.__getattribute__(self,attrib)
@@ -98,10 +102,12 @@ class FileClass(object):
         
         return varname_checked
 
-    def get_variables(self, var_names, get_proj_info=True, assign_heights=False, shared_heights=False):
+    def get_variable(self, var_names, itime=0, get_proj_info=True, assign_heights=False, shared_heights=False):
         
         # Create dictionary of options
-        import_opts = {'get_proj_info':get_proj_info,\
+        # share height means share topograph
+        import_opts = {'itime':itime
+                       'get_proj_info':get_proj_info,\
                        'shared_heights':shared_heights,\
                        'assign_heights':assign_heights}
         
@@ -110,10 +116,12 @@ class FileClass(object):
             for i,v in enumerate(var_names):
                 var = self.get_variables(v, **import_opts)
                 if assign_heights:
+                    if i > 0 and shared_heights:
                     # Stop assigning heights, after first variable
                     import_opts['assign_heights'] = False
                     # If shared_heights is true we just copy the heights from the first variables to all others
                     var.attributes['z-levels'] = dic_var[var_names[0]].attributes['z-levels']
+                    var.attributes['topograph'] = dic_var[var_names[0]].attributes['topograph']
 
                 dic_var[v] = var
             return dic_var
@@ -129,7 +137,7 @@ class FileClass(object):
             else:
                 varname_checked = self.check_varname(var_names)
                 if varname_checked != '':
-                    var = d.DataClass(self, varname_checked, get_proj_info)
+                    var = d.DataClass(self, varname_checked, get_proj_info=get_proj_info, itime=itime)
                 else:
                     print('Variable was not found in file_instance')
                     return
@@ -157,4 +165,5 @@ if __name__ == '__main__':
     import pyWRF as pw
     file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
     
-    U = file_h.get_variable('QR')
+    QR = file_h.get_variable('QR', assign_heights=True)
+    N = file_h.get_variable('N', assign_heights=True)
