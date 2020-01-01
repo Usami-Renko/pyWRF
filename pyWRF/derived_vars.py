@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:27
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-01 20:02:25
+@LastEditTime : 2020-01-01 23:34:34
 '''
 
 # WRF CONSTANTS
@@ -14,6 +14,7 @@ WRF_R_V = 451.51
 WRF_RDV = WRF_R_D / WRF_R_V
 WRF_O_M_RDV = 1.0 - WRF_RDV
 WRF_RVD_M_O = WRF_R_V / WRF_R_D - 1.0
+WRF_G = 9.81
 
 DERIVED_VARS=['N', 'QV_v', 'QR_v', 'QS_v', 'QG_v', 'QC_v', 'QI_v', 'RHO', 'Pw', 'P', 'T', 'Zw', 'Zm']
 
@@ -81,14 +82,23 @@ def get_derived_var(file_instance, varname, options):
             derived_var.attributes['long_name']='Pressure'
             derived_var.attributes['units']='Pa'
         elif varname == 'T':
-            d = file_instance.get_variable(['Thetap', 'T00', 'P'], **options)
-            derived_var=(d['Thetap']+d['T00'])*(d['P']/100000.)**0.2857
+            d = file_instance.get_variable(['Thetap', 'T00', 'P', 'P00'], **options)
+            derived_var=(d['Thetap']+d['T00'].data)*(d['P']/d['P00'].data)**0.2857
             derived_var.attributes['long_name']='Temperature'
             derived_var.attributes['units']='K'
         elif varname == 'Zw':
-            pass
+            d = file_instance.get_variable(['PHB', 'PH'], **options)
+            derived_var=(d['PHB']+d['PH'])/WRF_G
+            derived_var.attributes['long_name']='Height on velocity(full) levels'
+            derived_var.attributes['units']='m'
         elif varname == 'Zm':
-            pass
+            # Note that on eta coordinates, the half level always divide the full level in half
+            # there is an aproximation that the height on half level is the geometric average of the neighbouring two full levels
+            # isothermal layer approximation
+            d = file_instance.get_variable(['Zw'], **options)
+            derived_var=(d['Zw'][:-1]*d['Zw'][1:])**0.5/WRF_G
+            derived_var.attributes['long_name']='Height on mass(half) levels'
+            derived_var.attributes['units']='m'
         else:
             raise ValueError('Could not compute derived variable, please specify a valid variable name')
     except:
