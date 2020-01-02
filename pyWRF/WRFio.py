@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 09:05:01
+@LastEditTime : 2020-01-02 10:13:06
 '''
 
 # global import
@@ -16,15 +16,15 @@ import gc
 import warnings
 
 # local import
-from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
-import pyWRF.data as d
+# from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
+# import pyWRF.data as d
 
 # test
-# from derived_vars import DERIVED_VARS, get_derived_var
-# import data as d
+from derived_vars import DERIVED_VARS, get_derived_var
+import data as d
 
 # netcdf attributes
-_nc_builtins = ['__class__', '__delattr__', '__doc__', '__getattribute__', '__hash__', \
+_nc_builtins = ['__class__', '__delattr__', '__doc__', '__getattribute__', '__hash__', '__dict__',\
             '__init__', '__module__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', \
             '__setattr__', '__str__', '__weakref__', '__getitem__', '__setitem__', '__len__' ]
 
@@ -69,7 +69,7 @@ class FileClass(object):
             return None
         
         # get file handle
-        _fhandle = nc.open_file(fname, 'r')
+        _fhandle = nc.Dataset(fname, 'r')
 
         self._handle = _fhandle
         self.name = fname
@@ -118,7 +118,7 @@ class FileClass(object):
         if isinstance(var_names, list):
             dic_var = {} # only return those wanted vars
             for i,v in enumerate(var_names):
-                var = self.get_variables(v, **import_opts)
+                var = self.get_variable(v, **import_opts)
                 if assign_heights:
                     if i > 0 and shared_heights:
                         # Stop assigning heights, after first variable
@@ -152,7 +152,7 @@ class FileClass(object):
             if assign_heights and var:
                 var.assign_heights()
 
-            print 'Variable was read successfully'
+            print('Variable ' + var_names + ' was read successfully')
             print('--------------------------' )
             print('')
             return var
@@ -166,8 +166,12 @@ class FileClass(object):
 
 
 if __name__ == '__main__':
-    import pyWRF as pw
-    file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
+    # import pyWRF as pw
+    # file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
     
+    file_h = open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
+
+    # Zw = file_h.get_variable('Zw', assign_heights=False)
+    # print(Zw)
     QR = file_h.get_variable('QR', assign_heights=True)
-    N = file_h.get_variable('N', assign_heights=True)
+    # N = file_h.get_variable('N', assign_heights=True)

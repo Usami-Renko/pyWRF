@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-01 23:42:46
+@LastEditTime : 2020-01-02 11:54:09
 '''
 
 import numpy as np
@@ -36,26 +36,27 @@ class DataClass:
         
         # [A]. Deal with time slice
         # Ex: 2013-10-06_00:00:00
+        # print(self.file.__dict__)
         init_time = datetime.datetime.strptime(self.file.__dict__['START_DATE'],'%Y-%m-%d_%H:%M:%S')
         self.attributes['init_time'] = init_time
-        self.attributes['step'] = self.file.variable['XTIME']
+        self.attributes['step'] = self.file.variables['XTIME']
         self.attributes['step_type'] = 'minutes'
         self.get_time_slice(itime)
 
         if self.attributes['step_type'] == 'days':
-            current_time = init_time+datetime.timedelta(days=self.attributes['step'])
+            current_time = init_time+datetime.timedelta(days=int(self.attributes['step'].data))
         elif self.attributes['step_type'] == 'hours':
-            current_time = init_time+datetime.timedelta(hours=self.attributes['step'])
+            current_time = init_time+datetime.timedelta(hours=int(self.attributes['step'].data))
         elif self.attributes['step_type'] == 'minutes':
-            current_time = init_time+datetime.timedelta(minutes=self.attributes['step'])
+            current_time = init_time+datetime.timedelta(minutes=int(self.attributes['step'].data))
         elif self.attributes['step_type'] == 'seconds':
-            current_time = init_time+datetime.timedelta(seconds=self.attributes['step'])
+            current_time = init_time+datetime.timedelta(seconds=int(self.attributes['step'].data))
 
         self.attributes['time']=str(current_time)
         
         # [B]. get projection information and coordinates
         dic_proj = {'TRUELAT1':self.file.__dict__['TRUELAT1'], 'TRUELAT2':self.file.__dict__['TRUELAT2'],
-                    'MOAD_CENLAT':self.file.__dict__['MOAD_CENLAT'], 'STAND_LON':self.file.__dict__['STAND_LON'],
+                    'MOAD_CEN_LAT':self.file.__dict__['MOAD_CEN_LAT'], 'STAND_LON':self.file.__dict__['STAND_LON'],
                     'CEN_LAT':self.file.__dict__['CEN_LAT'], 'CEN_LON':self.file.__dict__['CEN_LON'],
                     'DX':self.file.__dict__['DX'], 'DY':self.file.__dict__['DY']}
         
@@ -66,7 +67,7 @@ class DataClass:
             elif 'south_north' in dim:
                 dic_proj['nJ'] = shape[i]
             # currently we just make the coordinates as grid index
-            self.coordinates[dim]=np.arange(0,shape[i]).astype('float32')
+            self.coordinates[dim]=np.arange(0,shape[i]).astype('int')
         
         if get_proj_info:
             self.attributes['proj_info']=dic_proj
@@ -77,8 +78,17 @@ class DataClass:
         list_dimensions.remove('Time')
         self.dimensions = tuple(list_dimensions) # remove the time dimension
         self.data = self.data[itime, ...]
-        self.step = self.step[itime]
+        self.attributes['step'] = self.attributes['step'][itime]
         self.dim -= 1
+    
+    def get_vertical_slice(self, slice):
+        sliced_var = self.copy()
+        sliced_var.data = sliced_var.data[slice]
+        for i,dim in enumerate(sliced_var.coordinates.keys()):
+            if 'bottom_top' in dim:
+                sliced_var.coordinates[dim] = sliced_var.coordinates[dim][slice[i]]
+        
+        return sliced_var
 
     def copy(self):
         cp=DataClass()
@@ -108,26 +118,26 @@ class DataClass:
         return string
 
     def assign_topo(self):
-        d = self.file.get_variable(['HGT'], itime=0)
+        d = self.file.get_variable('HGT', itime=0)
 
         # HGT are defined on horizontal C-grid full grids
         if 'west_east_stag' in self.dimensions: # a U-like grid
-            stag_topo = 0.5 * (d['HGT'].data[:,:-1] + d['HGT'].data[:,1:])
+            stag_topo = 0.5 * (d.data[:,:-1] + d.data[:,1:])
             stag_topo = np.pad(stag_topo, ((0, 0), (1, 1)), 'edge')
         elif 'south_north_stag' in self.dimensions: # a V-like grid
-            stag_topo = 0.5 * (d['HGT'].data[:-1,:] + d['HGT'].data[1:,:])
+            stag_topo = 0.5 * (d.data[:-1,:] + d.data[1:,:])
             stag_topo = np.pad(stag_topo, ((1, 1), (0, 0)), 'edge')
         else:
-            stag_topo = d['HGT'].data
+            stag_topo = d.data
         
         self.attributes['topograph'] = stag_topo.astype('float32')
     
     def assign_heights(self):
 
         if 'bottom_top_stag' in self.dimensions: # a W-like grid
-            Z = self.file.get_variable(['Zw'], itime=0)['Zw'].data
+            Z = self.file.get_variable('Zw', itime=0).data
         else:
-            Z = self.file.get_variable(['Zm'], itime=0)['Zm'].data
+            Z = self.file.get_variable('Zm', itime=0).data
 
         # Z-mass and Z-W are both defined on horizontal C-grid full grids
 
@@ -150,6 +160,11 @@ class DataClass:
     # enable slice like an array
     def __getitem__(self,key):
         return self.data[key]
+    
+    def log(self):
+        cp=self.copy()
+        cp.data=np.log(cp.data)
+        return cp
 
     def __add__(self, x):
         cp=None
@@ -157,7 +172,7 @@ class DataClass:
             cp=self.copy()
             cp.data+=x
         elif isinstance(x, DataClass): # Sum by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data+=x.data
 
@@ -174,7 +189,7 @@ class DataClass:
             cp=self.copy()
             cp.data+=x
         elif isinstance(x, DataClass): # Sum by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data+=x.data
                 keys=self.attributes.keys()
@@ -190,7 +205,7 @@ class DataClass:
             cp=self.copy()
             cp.data-=x
         elif isinstance(x, DataClass): # Substract by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data-=x.data
                 keys=self.attributes.keys()
@@ -205,7 +220,7 @@ class DataClass:
             cp=self.copy()
             cp.data=x-cp.data
         elif isinstance(x, DataClass): # Substract by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data=x.data-cp.data
                 keys=self.attributes.keys()
@@ -221,7 +236,7 @@ class DataClass:
             cp=self.copy()
             cp.data*=x
         elif isinstance(x, DataClass): # Multiply by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data*=x.data
                 keys=self.attributes.keys()
@@ -237,7 +252,7 @@ class DataClass:
             cp=self.copy()
             cp.data*=x
         elif isinstance(x, DataClass): # Multiply by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data*=x.data
                 keys=self.attributes.keys()
@@ -252,7 +267,7 @@ class DataClass:
             cp=self.copy()
             cp.data/=x
         elif isinstance(x, DataClass): # divide by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data/=x.data
                 keys=self.attributes.keys()
@@ -267,7 +282,7 @@ class DataClass:
             cp=self.copy()
             cp.data=x/cp.data
         elif isinstance(x, DataClass): # divide by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data=x.data/cp.data
                 keys=self.attributes.keys()
@@ -282,7 +297,7 @@ class DataClass:
             cp=self.copy()
             cp.data**x
         elif isinstance(x, DataClass): # divide by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data**x.data
                 keys=self.attributes.keys()
@@ -297,7 +312,7 @@ class DataClass:
             cp=self.copy()
             cp.data=x**cp.data
         elif isinstance(x, DataClass): # divide by another variable
-            if self.data.shape == x.data.shape and self.coordinates.keys() == x.coordinates.keys():
+            if self.data.shape == x.data.shape:
                 cp=self.copy()
                 cp.data=x.data**cp.data
                 keys=self.attributes.keys()

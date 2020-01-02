@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:27
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-01 23:34:34
+@LastEditTime : 2020-01-02 11:56:58
 '''
 
 # WRF CONSTANTS
@@ -78,7 +78,7 @@ def get_derived_var(file_instance, varname, options):
             derived_var.attributes['units']='Pa'
         elif varname == 'P':
             d = file_instance.get_variable(['Pp', 'PB'], **options)
-            derived_var=(d['P']+d['PB'])
+            derived_var=(d['Pp']+d['PB'])
             derived_var.attributes['long_name']='Pressure'
             derived_var.attributes['units']='Pa'
         elif varname == 'T':
@@ -92,15 +92,31 @@ def get_derived_var(file_instance, varname, options):
             derived_var.attributes['long_name']='Height on velocity(full) levels'
             derived_var.attributes['units']='m'
         elif varname == 'Zm':
-            # Note that on eta coordinates, the half level always divide the full level in half
-            # there is an aproximation that the height on half level is the geometric average of the neighbouring two full levels
             # isothermal layer approximation
-            d = file_instance.get_variable(['Zw'], **options)
-            derived_var=(d['Zw'][:-1]*d['Zw'][1:])**0.5/WRF_G
+            d = file_instance.get_variable(['Zw', 'T', 'P', 'Pw'], **options)
+
+            slice_ls1, slice_ls2 = list(), list()
+            for dim,coords in d['Zw'].coordinates.items():
+                if dim == 'bottom_top_stag':
+                    slice_ls1.append(slice(coords[0], coords[-1])) # z1
+                    slice_ls2.append(slice(coords[0]+1, coords[-1]+1)) # z2
+                else:
+                    slice_ls1.append(slice(coords[0], coords[-1]+1))
+                    slice_ls2.append(slice(coords[0], coords[-1]+1))
+            slice1, slice2 = tuple(slice_ls1), tuple(slice_ls2)
+            Zw1, Zw2 = d['Zw'].get_vertical_slice(slice1), d['Zw'].get_vertical_slice(slice2)
+            
+            Rv = WRF_R_D * (1 + 0.378*d['Pw']/d['P'])
+            a = WRF_G / Rv / d['T']
+            s = 2 / (np.e**(a*Zw1) + np.e**(a*Zw2))
+            derived_var = 1./ a * s.log()
+
             derived_var.attributes['long_name']='Height on mass(half) levels'
             derived_var.attributes['units']='m'
         else:
             raise ValueError('Could not compute derived variable, please specify a valid variable name')
     except:
-        raise ValueError('Could not compute specified derived variable, check if all the necessary variables are in the input file_instance.')        
+        raise ValueError('Could not compute specified derived variable, check if all the necessary variables are in the input file_instance.')
+    
+    derived_var.name = varname        
     return derived_var
