@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:27
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 14:13:02
+@LastEditTime : 2020-01-02 16:07:14
 '''
 
 # WRF CONSTANTS
@@ -82,7 +82,7 @@ def get_derived_var(file_instance, varname, options):
         derived_var.attributes['units']='Pa'
     elif varname == 'T':
         d = file_instance.get_variable(['Thetap', 'T00', 'P', 'P00'], **options)
-        derived_var=(d['Thetap']+d['T00'].data)*(d['P']/d['P00'].data)**0.2857
+        derived_var=(d['Thetap']+d['T00'].data)*((d['P']/d['P00'].data)**0.2857)
         derived_var.attributes['long_name']='Temperature'
         derived_var.attributes['units']='K'
     elif varname == 'Zw':
@@ -106,8 +106,8 @@ def get_derived_var(file_instance, varname, options):
         Zw1, Zw2 = d['Zw'].get_vertical_slice(slice1), d['Zw'].get_vertical_slice(slice2)
         
         Rv = WRF_R_D * (1 + 0.378*d['Pw']/d['P'])
-        a = WRF_G / Rv / d['T']
-        s = 2 / (np.e**(a*Zw1) + np.e**(a*Zw2))
+        a = WRF_G / Rv / d['T']     
+        s = 2. / (1./np.e**(a*Zw1) + 1./np.e**(a*Zw2))
         derived_var = 1./ a * s.log()
 
         derived_var.attributes['long_name']='Height on mass(half) levels'

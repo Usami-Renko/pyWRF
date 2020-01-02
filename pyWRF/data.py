@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 14:57:06
+@LastEditTime : 2020-01-02 16:05:46
 '''
 
 import numpy as np
@@ -311,11 +311,11 @@ class DataClass:
         cp=None
         if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
             cp=self.copy()
-            cp.data**x
+            cp.data = cp.data**x
         elif isinstance(x, DataClass): # divide by another variable
             if self.data.shape == x.data.shape:
                 cp=self.copy()
-                cp.data**x.data
+                cp.data = cp.data**x.data
                 keys=self.attributes.keys()
                 for att in x.attributes.keys():
                     if att not in keys:

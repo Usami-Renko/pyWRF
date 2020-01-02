@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 15:00:33
+@LastEditTime : 2020-01-02 16:26:53
 '''
 
 # global import
@@ -16,12 +16,8 @@ import gc
 import warnings
 
 # local import
-# from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
-# import pyWRF.data as d
-
-# test
-from derived_vars import DERIVED_VARS, get_derived_var
-import data as d
+from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
+import pyWRF.data as d
 
 # netcdf attributes
 _nc_builtins = ['__class__', '__delattr__', '__doc__', '__getattribute__', '__hash__', '__dict__',\
@@ -134,14 +130,13 @@ class FileClass(object):
                 dic_var[v] = var
             return dic_var
         else:
-            print('    '*depth + var_names)
+            print('----'*depth + '>' + var_names)
             
             # check if already read
             if var_names in self.dic_variables.keys():
                 var = self.dic_variables[var_names]
                 # maybe not assigned at first when computing 'Zm' and 'Zw'
                 if 'z-levels' not in var.attributes and assign_heights:
-                    print('reassign heights')
                     var.assign_heights(depth=depth)
             elif var_names in DERIVED_VARS:
                 var = get_derived_var(self,var_names,import_opts)
@@ -160,7 +155,6 @@ class FileClass(object):
 
             # Assign heights if wanted
             if 'z-levels' not in var.attributes and assign_heights and var:
-                print('assign heights')
                 var.assign_heights(depth=depth)
 
             return var
@@ -174,16 +168,28 @@ class FileClass(object):
 
 
 if __name__ == '__main__':
-    # import pyWRF as pw
-    # file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
-    
-    file_h = open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
+    import pyWRF as pw
+    file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
 
-    Zm = file_h.get_variable('Zm', assign_heights=False)
-    print(Zm)
+    # [1]. Zw Zm RHO
+    # Zw = file_h.get_variable('Zw', assign_heights=False)
     # Zm = file_h.get_variable('Zm', assign_heights=False)
-    # d = file_h.get_variable('P', assign_heights=True)
-    # N = file_h.get_variable('N', assign_heights=True)
-    # U = file_h.get_variable('U', assign_heights=True)
-    # W = file_h.get_variable('W', assign_heights=True)
-    # d = file_h.get_variable(['P', 'T', 'U', 'V', 'W', 'QR_v', 'QC_v', 'QI_v', 'QS_v', 'QG_v'], assign_heights=True)
+    # RHO = file_h.get_variable('RHO', assign_heights=False)
+    # print(Zw[:,0,0])
+    # print(Zm[:,0,0])
+    # print(RHO[:,0,0])
+    
+    # [2]. U V GRIDS
+    # d = file_h.get_variable(['U','V','P'], assign_heights=True)
+    # print(d['U'].attributes['z-levels'][0, 0, :])
+    # print(d['P'].attributes['z-levels'][0, 0, :])
+    # print(d['V'].attributes['z-levels'][0, :, 0])
+    # print(d['P'].attributes['z-levels'][0, :, 0])
+
+    # [3]. W GRIDS
+    # d = file_h.get_variable(['W', 'P'], assign_heights=True)
+    # print(d['W'].attributes['z-levels'][:, 0, 0])
+    # print(d['P'].attributes['z-levels'][:, 0, 0])
+
+    # [4]. Full test
+    d = file_h.get_variable(['P', 'T', 'U', 'V', 'W', 'QR_v', 'QC_v', 'QI_v', 'QS_v', 'QG_v'], assign_heights=True)
