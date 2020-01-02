@@ -5,13 +5,16 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:57
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 09:44:14
+@LastEditTime : 2020-01-02 21:05:48
 '''
 
 import numpy as np
 import pyproj
 
 def WGS_to_WRF(coords_WGS, proj_info):
+    # convert from tuple to np.ndarrray
+    if isinstance(coords_WGS, tuple):
+        coords_WGS=np.vstack(coords_WGS)
     # check if input is an array
     if isinstance(coords_WGS, np.ndarray):
         if coords_WGS.shape[0]<coords_WGS.shape[1]:
