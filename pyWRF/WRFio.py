@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-01 21:02:20
+@LastEditTime : 2020-01-02 09:05:01
 '''
 
 # global import
@@ -18,6 +18,10 @@ import warnings
 # local import
 from pyWRF.derived_vars import DERIVED_VARS, get_derived_var
 import pyWRF.data as d
+
+# test
+# from derived_vars import DERIVED_VARS, get_derived_var
+# import data as d
 
 # netcdf attributes
 _nc_builtins = ['__class__', '__delattr__', '__doc__', '__getattribute__', '__hash__', \
@@ -106,7 +110,7 @@ class FileClass(object):
         
         # Create dictionary of options
         # share height means share topograph
-        import_opts = {'itime':itime
+        import_opts = {'itime':itime,\
                        'get_proj_info':get_proj_info,\
                        'shared_heights':shared_heights,\
                        'assign_heights':assign_heights}
@@ -117,11 +121,11 @@ class FileClass(object):
                 var = self.get_variables(v, **import_opts)
                 if assign_heights:
                     if i > 0 and shared_heights:
-                    # Stop assigning heights, after first variable
-                    import_opts['assign_heights'] = False
-                    # If shared_heights is true we just copy the heights from the first variables to all others
-                    var.attributes['z-levels'] = dic_var[var_names[0]].attributes['z-levels']
-                    var.attributes['topograph'] = dic_var[var_names[0]].attributes['topograph']
+                        # Stop assigning heights, after first variable
+                        import_opts['assign_heights'] = False
+                        # If shared_heights is true we just copy the heights from the first variables to all others
+                        var.attributes['z-levels'] = dic_var[var_names[0]].attributes['z-levels']
+                        var.attributes['topograph'] = dic_var[var_names[0]].attributes['topograph']
 
                 dic_var[v] = var
             return dic_var

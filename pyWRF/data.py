@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-01 20:52:32
+@LastEditTime : 2020-01-01 23:42:46
 '''
 
 import numpy as np
@@ -138,7 +138,7 @@ class DataClass:
             Z = 0.5 * (Z[:,:-1,:] + Z[:,1:,:])
             Z = np.pad(Z, ((0, 0), (1, 1), (0, 0)), 'edge')
         
-        if Z.shape == self.data.shape
+        if Z.shape == self.data.shape:
             self.attributes['z-levels'] = Z.astype('float32')
         else:
             raise IOError('z-levels have different dimension with the variable')
