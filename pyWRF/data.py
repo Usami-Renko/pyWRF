@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 11:54:09
+@LastEditTime : 2020-01-02 14:57:06
 '''
 
 import numpy as np
@@ -17,13 +17,13 @@ import warnings
 
 class DataClass:
     # This is just a small class that contains the content of a variable, to facilitate manipulation of data.
-    def __init__(self, file='', varname='', get_proj_info=True, itime=0):
+    def __init__(self, file='', varname='', formal_name='', get_proj_info=True, itime=0):
         if file != '' and varname != '':
-            self.create(file, varname, get_proj_info, itime)
+            self.create(file, varname, formal_name, get_proj_info, itime)
     
-    def create(self, file, varname, get_proj_info, itime):
+    def create(self, file, varname, formal_name, get_proj_info, itime):
         self.file = file
-        self.name = varname
+        self.name = formal_name
         self.data = self.file.variables[varname][:].astype('float32')
         self.dim =  len(self.data.shape)
         self.coordinates = OrderedDict()
@@ -117,8 +117,8 @@ class DataClass:
             string+='   '+atr+' : "'+str(self.attributes[atr])+'"\n'
         return string
 
-    def assign_topo(self):
-        d = self.file.get_variable('HGT', itime=0)
+    def assign_topo(self, depth):
+        d = self.file.get_variable('HGT', itime=0, depth=depth)
 
         # HGT are defined on horizontal C-grid full grids
         if 'west_east_stag' in self.dimensions: # a U-like grid
@@ -132,12 +132,14 @@ class DataClass:
         
         self.attributes['topograph'] = stag_topo.astype('float32')
     
-    def assign_heights(self):
+    def assign_heights(self, depth):
 
         if 'bottom_top_stag' in self.dimensions: # a W-like grid
-            Z = self.file.get_variable('Zw', itime=0).data
+            Z = self.file.get_variable('Zw', itime=0, depth=depth).data
+        elif 'bottom_top' in self.dimensions:
+            Z = self.file.get_variable('Zm', itime=0, depth=depth).data
         else:
-            Z = self.file.get_variable('Zm', itime=0).data
+            return # for variables with no vertical coordinates
 
         # Z-mass and Z-W are both defined on horizontal C-grid full grids
 
@@ -153,7 +155,7 @@ class DataClass:
         else:
             raise IOError('z-levels have different dimension with the variable')
         
-        self.assign_topo()
+        self.assign_topo(depth)
         
     # Redefine operators
 
@@ -181,6 +183,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
 
     def __radd__(self, x): # Reverse addition
@@ -196,6 +200,7 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
     
     
@@ -212,6 +217,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
 
     def __rsub__(self, x): # Reverse subtraction (non-commutative)
@@ -227,6 +234,7 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
 
 
@@ -243,6 +251,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
         
 
@@ -259,6 +269,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
         
     def __div__(self, x):
@@ -274,6 +286,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
             
     def __rdiv__(self, x): # Reverse divsion (non-commutative)
@@ -289,6 +303,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
             
     def __pow__(self, x):
@@ -304,6 +320,8 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
     
     def __rpow__(self, x): # Reverse divsion (non-commutative)
@@ -319,4 +337,6 @@ class DataClass:
                 for att in x.attributes.keys():
                     if att not in keys:
                         cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp

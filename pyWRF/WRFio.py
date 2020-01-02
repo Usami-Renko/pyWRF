@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 10:13:06
+@LastEditTime : 2020-01-02 15:00:33
 '''
 
 # global import
@@ -106,16 +106,20 @@ class FileClass(object):
         
         return varname_checked
 
-    def get_variable(self, var_names, itime=0, get_proj_info=True, assign_heights=False, shared_heights=False):
+    def get_variable(self, var_names, itime=0, get_proj_info=True, assign_heights=False, shared_heights=False, depth=-1):
         
         # Create dictionary of options
         # share height means share topograph
+
+        depth += 1
         import_opts = {'itime':itime,\
                        'get_proj_info':get_proj_info,\
                        'shared_heights':shared_heights,\
-                       'assign_heights':assign_heights}
+                       'assign_heights':assign_heights,\
+                       'depth':depth}
         
         if isinstance(var_names, list):
+            import_opts['depth'] -= 1
             dic_var = {} # only return those wanted vars
             for i,v in enumerate(var_names):
                 var = self.get_variable(v, **import_opts)
@@ -130,18 +134,24 @@ class FileClass(object):
                 dic_var[v] = var
             return dic_var
         else:
-            print('--------------------------')
-            print('Reading variable ' + var_names)
+            print('    '*depth + var_names)
             
             # check if already read
             if var_names in self.dic_variables.keys():
                 var = self.dic_variables[var_names]
+                # maybe not assigned at first when computing 'Zm' and 'Zw'
+                if 'z-levels' not in var.attributes and assign_heights:
+                    print('reassign heights')
+                    var.assign_heights(depth=depth)
             elif var_names in DERIVED_VARS:
                 var = get_derived_var(self,var_names,import_opts)
+                # force the heights and topograph assignment
+                if 'z-levels' in var.attributes.keys():
+                    del var.attributes['z-levels'], var.attributes['topograph']
             else:
                 varname_checked = self.check_varname(var_names)
                 if varname_checked != '':
-                    var = d.DataClass(self, varname_checked, get_proj_info=get_proj_info, itime=itime)
+                    var = d.DataClass(self, varname_checked, var_names, get_proj_info=get_proj_info, itime=itime)
                 else:
                     print('Variable was not found in file_instance')
                     return
@@ -149,12 +159,10 @@ class FileClass(object):
             self.dic_variables[var_names] = var
 
             # Assign heights if wanted
-            if assign_heights and var:
-                var.assign_heights()
+            if 'z-levels' not in var.attributes and assign_heights and var:
+                print('assign heights')
+                var.assign_heights(depth=depth)
 
-            print('Variable ' + var_names + ' was read successfully')
-            print('--------------------------' )
-            print('')
             return var
 
     def check_if_variables_in_file(self, varnames):
@@ -171,7 +179,11 @@ if __name__ == '__main__':
     
     file_h = open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_00_00')
 
-    # Zw = file_h.get_variable('Zw', assign_heights=False)
-    # print(Zw)
-    QR = file_h.get_variable('QR', assign_heights=True)
+    Zm = file_h.get_variable('Zm', assign_heights=False)
+    print(Zm)
+    # Zm = file_h.get_variable('Zm', assign_heights=False)
+    # d = file_h.get_variable('P', assign_heights=True)
     # N = file_h.get_variable('N', assign_heights=True)
+    # U = file_h.get_variable('U', assign_heights=True)
+    # W = file_h.get_variable('W', assign_heights=True)
+    # d = file_h.get_variable(['P', 'T', 'U', 'V', 'W', 'QR_v', 'QC_v', 'QI_v', 'QS_v', 'QG_v'], assign_heights=True)
