@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-03 12:20:33
+@LastEditTime : 2020-01-04 10:25:12
 '''
 
 import numpy as np
@@ -33,7 +33,7 @@ class DataClass:
         self.attributes = self.file.variables[varname].__dict__
         # Ex: (u'Time', u'south_north', u'west_east') 
         self.dimensions = self.file.variables[varname].dimensions
-        
+
         # [A]. Deal with time slice
         # Ex: 2013-10-06_00:00:00
         # print(self.file.__dict__)
@@ -53,6 +53,9 @@ class DataClass:
             current_time = init_time+datetime.timedelta(seconds=int(self.attributes['step'].data))
 
         self.attributes['time']=str(current_time)
+
+        if self.attributes['time'] == '2013-10-06 00:00:00':
+            print('Wrong time by {}'.format(self.name))
         
         # [B]. get projection information and coordinates
         dic_proj = {'TRUELAT1':self.file.__dict__['TRUELAT1'], 'TRUELAT2':self.file.__dict__['TRUELAT2'],
@@ -117,8 +120,8 @@ class DataClass:
             string+='   '+atr+' : "'+str(self.attributes[atr])+'"\n'
         return string
 
-    def assign_topo(self, depth):
-        d = self.file.get_variable('HGT', itime=0, depth=depth)
+    def assign_topo(self, depth, itime):
+        d = self.file.get_variable('HGT', itime=itime, depth=depth)
 
         # HGT are defined on horizontal C-grid full grids
         if 'west_east_stag' in self.dimensions: # a U-like grid
@@ -132,12 +135,12 @@ class DataClass:
         
         self.attributes['topograph'] = stag_topo.astype('float32')
     
-    def assign_heights(self, depth):
+    def assign_heights(self, depth, itime):
 
         if 'bottom_top_stag' in self.dimensions: # a W-like grid
-            Z = self.file.get_variable('Zw', itime=0, depth=depth).data
+            Z = self.file.get_variable('Zw', itime=itime, depth=depth).data
         elif 'bottom_top' in self.dimensions:
-            Z = self.file.get_variable('Zm', itime=0, depth=depth).data
+            Z = self.file.get_variable('Zm', itime=itime, depth=depth).data
         else:
             return # for variables with no vertical coordinates
 
@@ -155,7 +158,7 @@ class DataClass:
         else:
             raise IOError('z-levels have different dimension with the variable')
         
-        self.assign_topo(depth)
+        self.assign_topo(depth, itime)
         
     # Redefine operators
 

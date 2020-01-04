@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-03 12:15:27
+@LastEditTime : 2020-01-04 10:21:18
 '''
 
 # global import
@@ -137,7 +137,7 @@ class FileClass(object):
                 var = self.dic_variables[var_names]
                 # maybe not assigned at first when computing 'Zm' and 'Zw'
                 if 'z-levels' not in var.attributes and assign_heights:
-                    var.assign_heights(depth=depth)
+                    var.assign_heights(depth=depth, itime=itime)
             elif var_names in DERIVED_VARS:
                 var = get_derived_var(self,var_names,import_opts)
                 # force the heights and topograph assignment
@@ -155,7 +155,7 @@ class FileClass(object):
 
             # Assign heights if wanted
             if 'z-levels' not in var.attributes and assign_heights and var:
-                var.assign_heights(depth=depth)
+                var.assign_heights(depth=depth, itime=itime)
 
             return var
 

@@ -5,7 +5,7 @@
 @Author: Hejun Xie
 @Date: 2020-01-02 16:29:13
 @LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-03 14:30:25
+@LastEditTime : 2020-01-04 10:23:43
 '''
 
 import pyWRF as pw
@@ -36,6 +36,10 @@ file_h = pw.open_file('../../cosmo_pol/pathos/WRF/wsm6/wrfout_d03_2013-10-06_00_
 # d = file_h.get_variable(['P', 'T', 'U', 'V', 'W', 'QR_v', 'QC_v', 'QI_v', 'QS_v', 'QG_v'], assign_heights=True)
 
 # [5]. hydrometeor test
-d = file_h.get_variable(['QI_v', 'QS_v'], itime=10, assign_heights=True)
-print(d['QI_v'][:,147,142])
-print(d['QS_v'][:,147,142])
+# d = file_h.get_variable(['QI_v', 'QS_v'], itime=10, assign_heights=True)
+# print(d['QI_v'][:,147,142])
+# print(d['QS_v'][:,147,142])
+
+# [6]. Time test
+d = file_h.get_variable(['U'], itime=10, assign_heights=True)
+print(file_h.dic_variables['T'].attributes['time'])
