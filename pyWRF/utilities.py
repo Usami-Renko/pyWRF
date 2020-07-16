@@ -4,10 +4,11 @@
 @Description: 
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:57
-@LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 21:05:48
+@LastEditors: Hejun Xie
+@LastEditTime: 2020-07-16 16:54:54
 '''
 
+import sys
 import numpy as np
 import pyproj
 
@@ -35,12 +36,24 @@ def WGS_to_WRF(coords_WGS, proj_info):
     # Easting and Northings of the domains center point
     wgs_proj = pyproj.Proj(proj='latlong', datum='WGS84')
 
-    cen_lambert_x, cen_lambert_y = pyproj.transform(wgs_proj, wrf_proj, proj_info['CEN_LON'], proj_info['CEN_LAT'])
+    python_version = sys.version_info
+
+    # python3 or python2
+    if sys.version_info[0] >= 3:
+        transformer = pyproj.Transformer.from_proj(wgs_proj, wrf_proj)
+
+    if sys.version_info[0] >= 3:
+        cen_lambert_x, cen_lambert_y = transformer.transform(proj_info['CEN_LON'], proj_info['CEN_LAT'])
+    else:
+        cen_lambert_x, cen_lambert_y = pyproj.transform(wgs_proj, wrf_proj, proj_info['CEN_LON'], proj_info['CEN_LAT'])
 
     nx, ny = proj_info['nI'], proj_info['nJ']
     dx, dy = proj_info['DX'], proj_info['DY']
 
-    proj_lambert_x, proj_lambert_y = pyproj.transform(wgs_proj, wrf_proj, lon, lat)
+    if sys.version_info[0] >= 3:
+        proj_lambert_x, proj_lambert_y = transformer.transform(lon, lat)
+    else:
+        proj_lambert_x, proj_lambert_y = pyproj.transform(wgs_proj, wrf_proj, lon, lat)
 
     x = proj_lambert_x - (cen_lambert_x - dx * (nx - 1) / 2.)
     y = proj_lambert_y - (cen_lambert_y - dy * (ny - 1) / 2.)
@@ -57,7 +70,7 @@ def WGS_to_WRF(coords_WGS, proj_info):
 if __name__ == "__main__":
     # unit test
     dic_proj = {'TRUELAT1':30., 'TRUELAT2':60.,
-                'MOAD_CENLAT':30., 'STAND_LON':125.,
+                'MOAD_CEN_LAT':30., 'STAND_LON':125.,
                 'CEN_LAT':28.8117, 'CEN_LON':123.2079,
                 'DX':3000., 'DY':3000.,
                 'nI':360, 'nJ':222}
