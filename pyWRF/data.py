@@ -4,8 +4,8 @@
 @Description: a small class to handle a variable and its attributes in WRF output
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
-@LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-04 10:25:12
+@LastEditors: Hejun Xie
+@LastEditTime: 2020-07-16 13:18:45
 '''
 
 import numpy as np
@@ -166,6 +166,9 @@ class DataClass:
     def __getitem__(self,key):
         return self.data[key]
     
+    def __setitem__(self, key, value):
+        self.data[key] = value
+    
     def log(self):
         cp=self.copy()
         cp.data=np.log(cp.data)
@@ -275,7 +278,8 @@ class DataClass:
             else:
                 raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
-        
+    
+    # for python 2.x
     def __div__(self, x):
         cp=None
         if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
@@ -309,7 +313,77 @@ class DataClass:
             else:
                 raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
         return cp
-            
+    
+    # for python 3.x
+    def __truediv__(self, x):
+        cp=None
+        if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
+            cp=self.copy()
+            cp.data/=x
+        elif isinstance(x, DataClass): # divide by another variable
+            if self.data.shape == x.data.shape:
+                cp=self.copy()
+                cp.data/=x.data
+                keys=self.attributes.keys()
+                for att in x.attributes.keys():
+                    if att not in keys:
+                        cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
+        return cp
+    
+    def __rtruediv__(self, x): # Reverse divsion (non-commutative)
+        cp=None
+        if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
+            cp=self.copy()
+            cp.data=x/cp.data
+        elif isinstance(x, DataClass): # divide by another variable
+            if self.data.shape == x.data.shape:
+                cp=self.copy()
+                cp.data=x.data/cp.data
+                keys=self.attributes.keys()
+                for att in x.attributes.keys():
+                    if att not in keys:
+                        cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
+        return cp
+    
+    # for both python 2.x and 3.x
+    def __floordiv__(self, x):
+        cp=None
+        if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
+            cp=self.copy()
+            cp.data//=x
+        elif isinstance(x, DataClass): # divide by another variable
+            if self.data.shape == x.data.shape:
+                cp=self.copy()
+                cp.data/=x.data
+                keys=self.attributes.keys()
+                for att in x.attributes.keys():
+                    if att not in keys:
+                        cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
+        return cp
+
+    def __rfloordiv__(self, x): # Reverse divsion (non-commutative)
+        cp=None
+        if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar
+            cp=self.copy()
+            cp.data=x//cp.data
+        elif isinstance(x, DataClass): # divide by another variable
+            if self.data.shape == x.data.shape:
+                cp=self.copy()
+                cp.data=x.data/cp.data
+                keys=self.attributes.keys()
+                for att in x.attributes.keys():
+                    if att not in keys:
+                        cp.attributes[att]=x.attributes[att]
+            else:
+                raise TypeError('var:{} and var:{} do not have identical shape'.format(self.name, x.name))
+        return cp
+
     def __pow__(self, x):
         cp=None
         if isinstance(x,(int,float,bool,np.ndarray )): # We divide by a scalar

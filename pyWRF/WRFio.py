@@ -4,8 +4,8 @@
 @Description: A class get WRF output file handler wrapped 
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:04
-@LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-04 10:21:18
+@LastEditors: Hejun Xie
+@LastEditTime: 2020-07-16 13:13:32
 '''
 
 # global import
@@ -91,7 +91,7 @@ class FileClass(object):
         varname_checked = ''
 
         # first check if the varname is in modelvar
-        list_vars = np.asarray(self.variables.keys())
+        list_vars = self.variables.keys()
 
         if varname in list_vars or varname in DERIVED_VARS:
             varname_checked = varname
