@@ -4,9 +4,9 @@
 @Description: 
 @Author: Hejun Xie
 @Date: 2019-12-29 18:37:47
-@LastEditors  : Hejun Xie
-@LastEditTime : 2020-01-02 09:02:50
+@LastEditors: Hejun Xie
+@LastEditTime: 2020-07-16 12:10:58
 '''
 
-from utilities import WGS_to_WRF
-from WRFio import open_file
+from pyWRF.utilities import WGS_to_WRF
+from pyWRF.WRFio import open_file
