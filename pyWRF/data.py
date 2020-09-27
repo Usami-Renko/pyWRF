@@ -4,8 +4,8 @@
 @Description: a small class to handle a variable and its attributes in WRF output
 @Author: Hejun Xie
 @Date: 2019-12-31 16:04:11
-@LastEditors: Hejun Xie
-@LastEditTime: 2020-07-16 13:18:45
+LastEditors: Hejun Xie
+LastEditTime: 2020-09-26 23:06:22
 '''
 
 import numpy as np
@@ -105,7 +105,6 @@ class DataClass:
     def __str__(self):
         string='---------------------------------------------------\n'
         string+='Variable: '+self.name+', size='+str(self.data.shape)+', coords='+'('+','.join(self.coordinates.keys())+')\n'
-        string+='Read from file: '+self.file.name+'\n'
         string+='Time : '+self.attributes['time']+'\n'
         string+='---------------------------------------------------\n'
         string+=str(self.data)+'\n'
